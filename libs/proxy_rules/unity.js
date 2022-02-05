@@ -5,7 +5,6 @@ module.exports = {
   summary: 'Unity Login',
   // intercept before send request to server
   *beforeSendRequest(requestDetail) {
-    console.log(requestDetail.url);
     if (requestDetail.url.indexOf("unity.com") > -1) {
         let headers = this.mapHeaders(requestDetail._req.rawHeaders);
         if (headers["Authorization"]) {

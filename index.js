@@ -1,22 +1,24 @@
-const { app, BrowserWindow } = require('electron')
+const { ipcMain, app, BrowserWindow } = require('electron')
+const proxy = require("./libs/proxy.js");
+require("./handlers/definitions.js");
+require("./libs/config.js");
 
 function createWindow () {
-const win = new BrowserWindow({
-        width: 800,
-        height: 600,
+    global.win = new BrowserWindow({
+        width: 1280,
+        height: 800,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         }
     })
 
-    win.loadFile('public/index.html')
+    global.win.loadFile('public/index.html')
 }
 
 app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') app.quit()
 });
-
 
 app.whenReady().then(() => {
     createWindow();

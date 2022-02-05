@@ -1,34 +1,22 @@
-const fs = require("fs");
-const proxy = require("../libs/proxy.js");
-const dispatcher = require("../libs/dispatcher.js");
-const config = require("../libs/config.js");
-const unity = require("../libs/unity.js");
+const { ipcRenderer } = require("electron");
 var appLogic = {};
 
 window.$ = window.jQuery = require('jquery');
 
-appLogic.init = () => {
-    //proxy.disableGlobalProxy();
-    config.load();
-    if (config.get("auth_key"))
-        appLogic.setAuthText();
-    
-    appLogic.initHandlers();
+appLogic.loadedAssets = null;
 
-    unity.init();
-    appLogic.loadAssets();
-    setInterval(appLogic.loadAssets, 30000);
+appLogic.init = () => {
+    ipcRenderer.send("handlers.init");
+    ipcRenderer.send("unity.init");
+    appLogic.initHandlers();
 }
 
 appLogic.startAuth = () => {
-    console.log("Start Listening")
-    dispatcher.addListener("onAuthReceived", appLogic.handleAuth);
-    proxy.start();
+    ipcRenderer.on("onAuthReceived", appLogic.onAuthValid);
+    ipcRenderer.send("proxy.start");
 }
 
-appLogic.handleAuth = (auth) => {
-    config.set("auth_key", auth);
-    appLogic.stopAuth();
+appLogic.onAuthValid = (e) => {
     appLogic.setAuthText();
 }
 
@@ -41,23 +29,22 @@ appLogic.setAuthTextError = () => {
 }
 
 appLogic.stopAuth = () => {
-    dispatcher.removeListener("onAuthReceived", appLogic.handleAuth);
-    proxy.stop();
+    dispatcher.removeListener("onAuthReceived", appLogic.onAuthValid);
+    ipcRenderer.send("proxy.stop");
 }
 
 appLogic.loadAssets = () => {
-    if (!unity.isDownloading()) {
-        unity.startLoadingAssets();
-    }
+    ipcRenderer.send("assets.load");
 }
 
-appLogic.onAssetsLoaded = (assets) => {
+appLogic.onAssetsLoaded = (e, assets) => {
+    appLogic.loadedAssets = assets;
     $(".appsList tbody").empty();
     if (!appLogic.appsTable) {
         appLogic.appsTable = $('.appsList').DataTable({
             scrollY: "73%",
             scrollCollapse: true,
-            data:assets,
+            data:appLogic.loadedAssets,
             paging:false,
             info:false,
             filter:false,
@@ -80,7 +67,7 @@ appLogic.onAssetsLoaded = (assets) => {
                     orderable: false
                 },
                 {
-                    data: "version",
+                    data: "downloadProgress",
                     className: "actions",
                     orderable: false,
                     render:function(data, type, row) {
@@ -97,18 +84,18 @@ appLogic.onAssetsLoaded = (assets) => {
                     }
                 },
                 {
-                    data: "version",
+                    data: "downloadProgress",
                     className: "actions",
                     orderable: false,
                     render:function(data, type, row) {
                         if (row.fileStatus == "UNKNOWN" || row.fileStatus == "NONEXIST")
-                            return "<div class='button' onClick='appLogic.downloadAsset(" + row.packageId + ")'>Download</div>";
+                            return "<button class='button' onClick='appLogic.downloadAsset(" + row.packageId + ")'>Download</button>";
                         else if (row.fileStatus == "PREVIOUS")
-                            return "<div class='button' onClick='appLogic.downloadAsset(" + row.packageId + ")'>Update</div>";
+                            return "<button class='button' onClick='appLogic.downloadAsset(" + row.packageId + ")'>Update</button>";
                         else if (row.fileStatus == "UPDATED")
                             return "";
                         else if (row.fileStatus == "DOWNLOADING")
-                            return "<div class='button' onClick='appLogic.cancelDownload(" + row.packageId + ")'>Cancel</div>";
+                            return "<button class='button' onClick='appLogic.cancelDownload(" + row.packageId + ")'>Cancel</button>";
                         else if (row.fileStatus == "DECODING")
                             return "";
                     }
@@ -123,15 +110,15 @@ appLogic.onAssetsLoaded = (assets) => {
 }
 
 appLogic.downloadAsset = (packageId) => {
-    unity.downloadAsset(packageId);
+    ipcRenderer.send("assets.download", packageId);
 }
 
 appLogic.cancelDownload = (packageId) => {
-    console.log("APP CANCEL");
-    unity.cancelDownload(packageId);
+    console.log("WEB CANCEL SENT")
+    ipcRenderer.send("assets.cancelDownload", packageId);
 }
 
-appLogic.onAssetsFailedLoading = (reason) => {
+appLogic.onAssetsFailedLoading = (e, reason) => {
     if (reason.status == 401) {
         appLogic.setAuthTextError();
     }
@@ -144,20 +131,38 @@ appLogic.onAssetsNotLoaded = () => {
     //$(".appsList tbody").empty().append($("#no_apps").clone().html());
 }
 
-appLogic.onDownloadProgress = appLogic.onDownloadComplete = (status) => {
-    appLogic.appsTable.rows("[package-id=" + status.packageId + "]").invalidate();
+appLogic.onDownloadProgress = (e, status) => {
+    appLogic.updatePackageById(status.packageId, status.update);
+    appLogic.appsTable.row("[package-id=" + status.packageId + "]").data(status.update).invalidate();
 }
 
-appLogic.onDownloadFailed = (error) => {
+appLogic.onDownloadFailed = (e, error) => {
     console.log(error.packageId);
     console.log(error.message);
 }
 
+appLogic.getPackageById = (packageId) => {
+    return appLogic.loadedAssets.filter((item) => {
+        return item.packageId == packageId;
+    })[0];
+}
+
+appLogic.updatePackageById = (packageId, update) => {
+    for (var asset in appLogic.loadedAssets) {
+        if (appLogic.loadedAssets[asset].packageId == packageId) {
+            if (!appLogic.loadedAssets[asset].fileStatus != "DOWNLOADING" || parseFloat(update.downloadProgress) > parseFloat(appLogic.loadedAssets[asset].downloadProgress)) {
+                appLogic.loadedAssets[asset] = update;
+                return;
+            }
+        }
+    }
+}
+
 appLogic.initHandlers = () => {
-    dispatcher.addListener("onAssetsLoaded", appLogic.onAssetsLoaded);
-    dispatcher.addListener("onAssetsFailedLoading", appLogic.onAssetsFailedLoading);
-    dispatcher.addListener("onAssetsNotLoaded", appLogic.onAssetsNotLoaded);
-    dispatcher.addListener("onDownloadProgress", appLogic.onDownloadProgress);
-    dispatcher.addListener("onDownloadComplete", appLogic.onDownloadComplete);
-    dispatcher.addListener("onDownloadFailed", appLogic.onDownloadFailed);
+    ipcRenderer.on("onAuthValid", appLogic.onAuthValid);
+    ipcRenderer.on("onAssetsLoaded", appLogic.onAssetsLoaded);
+    ipcRenderer.on("onAssetsFailedLoading", appLogic.onAssetsFailedLoading);
+    ipcRenderer.on("onDownloadProgress", appLogic.onDownloadProgress);
+    ipcRenderer.on("onDownloadComplete", appLogic.onDownloadProgress);
+    ipcRenderer.on("onDownloadFailed", appLogic.onDownloadFailed);
 }

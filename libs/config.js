@@ -28,6 +28,8 @@ const get = (param) => {
     return app_config[param];
 }
 
+load();
+
 module.exports = {
     load,
     save,

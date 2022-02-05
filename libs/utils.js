@@ -1,4 +1,4 @@
-var utils = {
+module.exports = {
     bytesForHuman(bytes) {
         let units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
     

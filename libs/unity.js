@@ -6,8 +6,7 @@ const config = require("./config.js")
 const dispatcher = require("./dispatcher.js");
 const sanitize = require("sanitize-filename");
 const Downloader = require("nodejs-file-downloader");
-
-console.log(crypto.getCiphers());
+const utils = require('./utils.js')
 
 unityAssets = [];
 continueLoadAssets = false;
@@ -23,11 +22,15 @@ const init = () => {
     else {
         dispatcher.dispatch("onAssetsNotLoaded");
     }
+    startLoadingAssets();
+    setInterval(startLoadingAssets, 30000);
 }
 
 const startLoadingAssets = () => {
-    continueLoadAssets = true;
-    loadAssets();
+    if (!isDownloading()) {
+        continueLoadAssets = true;
+        loadAssets();
+    }
 }
 
 const stopLoadingAssets = () => {
@@ -62,10 +65,10 @@ const loadAssets = async () => {
                     fs.writeFileSync("unity_assets.json", JSON.stringify(unityAssets));
                     if (unityAssets.length == unityAssetsResponse.length) {
                         verifyPhysicalAssets();
-                        dispatcher.dispatch("onAssetsLoaded", unityAssets);                        
+                        dispatcher.dispatch("onAuthValid");
+                        dispatcher.dispatch("onAssetsLoaded", unityAssets);
                     }
                 }).catch((e) => {
-                    console.log(e.message);
                     dispatcher.dispatch("onAssetFailedLoading", e.message);
                 });
             }
@@ -80,9 +83,7 @@ const verifyPhysicalAssets = () => {
     for (var app in unityAssets) {
         let appPath = config.get("download_path") + path.sep + unityAssets[app].publisher + path.sep;
         if (fs.existsSync(appPath + unityAssets[app].name + ".unitypackage")) {
-            console.log("UNITY FILE FOUND");
             if (fs.existsSync(appPath + unityAssets[app].name + ".version")) {
-                console.log("VERSION FILE FOUND");
                 let version = fs.readFileSync(appPath + unityAssets[app].name + ".version");
                 if (version == unityAssets[app].version) {
                     unityAssets[app].fileStatus = "UPDATED";
@@ -141,13 +142,18 @@ const downloadAsset = async (packageId) => {
             fileName: appName + ".undec",
             cloneFiles: false
         });
-        allDownloaders[packageId] = downloader;
+        allDownloaders[packageId] = {downloader:downloader, progressThrottle:200, lastProgress:null};
         downloader.config.onProgress = (percentage, chunk, remainingSize) => {
-            appData.fileStatus = "DOWNLOADING";
-            appData.downloadProgress = percentage;
-            dispatcher.dispatch("onDownloadProgress", {packageId:packageId, update:appData});
-            if (percentage == 100) {
-                appData.fileStatus = "DECODING";
+            if (allDownloaders[packageId]) {
+                if (!allDownloaders[packageId].lastProgress || (new Date().getTime()) - allDownloaders[packageId].lastProgress > allDownloaders[packageId].progressThrottle) {
+                    appData.fileStatus = "DOWNLOADING";
+                    appData.downloadProgress = percentage;
+                    if (percentage == 100) {
+                        appData.fileStatus = "DECODING";
+                    }
+                    dispatcher.dispatch("onDownloadProgress", {packageId:packageId, update:appData});            
+                    allDownloaders[packageId].lastProgress = (new Date().getTime());
+                }
             }
         };
         try {
@@ -179,10 +185,11 @@ const downloadAsset = async (packageId) => {
 }
 
 const cancelDownload = (packageId) => {
+    console.log("CANCEL REQUESTED")
     if (allDownloaders[packageId]) {
-        console.log("APP FOUND");
+        console.log("APP FOUND")
         let appData = getPackageById(packageId);
-        allDownloaders[packageId].cancel();
+        allDownloaders[packageId].downloader.cancel();
         appData.fileStatus = appData.prevFileStatus;
         if (fs.existsSync(config.get("download_path") + path.sep + appData.publisher + path.sep + appData.name + ".undec.download")) {
             fs.unlinkSync(config.get("download_path") + path.sep + appData.publisher + path.sep + appData.name + ".undec.download");
@@ -200,7 +207,7 @@ const reportComplete = (appData, appPath, appVersion, packageId) => {
     fs.writeFileSync(appPath + ".version", appVersion);
     appData.fileStatus = "UPDATED";
     delete allDownloaders[packageId];
-    dispatcher.dispatch("onDownloadComplete", {packageId:packageId});
+    dispatcher.dispatch("onDownloadComplete", {packageId:packageId, update:appData});
 }
 
 const getPackageById = (packageId) => {
