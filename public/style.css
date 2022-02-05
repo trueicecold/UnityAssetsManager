@@ -1,0 +1,123 @@
+body {
+    background-color:#444444;
+    color:#fff;
+    font-family:Arial;
+    margin:0;
+    padding:10px;
+}
+
+.error {
+    background-color:#FF5555;
+    font-size:13px;
+    padding:5px;
+}
+
+.success {
+    background-color:#1f8637;
+    font-size:13px;
+    padding:5px;
+}
+
+.link {
+    color:#ffffff;
+    text-decoration:underline;
+    cursor:pointer;
+}
+
+.button {
+    border:1px solid #fff;
+    padding:2px 4px;
+    border-radius:10px;
+    font-size:11px;
+    margin-left:10px;
+    cursor:pointer;
+    text-align:center;
+}
+
+.button:hover {
+    color:#1f8637;
+    background-color:#ffffff;
+}
+
+/* Apps List Table Manager */
+
+.appsList {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.appsList tbody tr td {
+    font-size:12px;
+    min-width:80px;
+}
+.appsList, .appsList th, .appsList td {
+   border: 1px solid #555;
+   text-align: left;
+}
+.appsList tr:nth-child(odd) {
+    background-color: #555;
+}
+.appsList tr:nth-child(even) {
+    background-color: #999;
+}
+.appsList th {
+    background-color: #222;
+}
+.appsList th, .appsList td {
+    padding: 5px;
+}
+
+.appsList th.sorterHeader {
+    cursor: pointer;
+}
+.appsList th.sorterHeader:after {
+    content: " \f0dc";
+    font-family: "FontAwesome";
+}
+
+.appsList th.sortingDesc:after {
+    content: " \f0dd";
+    font-family: "FontAwesome";
+}
+
+.appsList th.sortingAsc:after {
+    content: " \f0de";
+    font-family: "FontAwesome";
+}
+
+.appsList .actions {
+    text-align:center;
+    position:relative;
+}
+
+.appsList .actions .progress {
+    position:absolute;
+    z-index:1;
+    top:10%;
+    left:0;
+    height:80%;
+    background-color:#1f8637;
+}
+
+.appsList .actions .progressCaption {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    z-index:2;
+    line-height: 11px;;
+}
+
+#for_numrows {
+    padding: 10px;
+    float: left;
+}
+#for_filter_by {
+    padding: 10px;
+    float: right;
+}
+#pagesControllers {
+    display: block;
+    text-align: center;
+}

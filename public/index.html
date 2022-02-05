@@ -1,0 +1,52 @@
+<html>
+    <head>
+        <title>Unity Download Manager</title>
+        <link rel="stylesheet" href="style.css"/>
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css"/>
+        <script src="app.js"></script>
+        <script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+        <script src="libs/utils.js"></script>
+        <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+        <script>
+            window.onload=appLogic.init;
+        </script>
+
+        <script type="text/template" id="no_apps">
+            <tr>
+                <td colspan="5">
+                    No apps have been loaded. Click "Load Apps" to start populating this list.
+                    <span class="button" onClick="appLogic.loadAssets();">Load Apps</span>
+                </td>
+            </tr>
+        </script>
+
+        <script type="text/template" id="app_row">
+            <tr package_id="PACKAGE_ID">
+                <td>NAME</td>
+                <td>PUBLISHER</td>
+                <td>VERSION</td>
+                <td>SIZE</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </script>
+    </head>
+    <body>
+        <div id="authStatus" class="error no_auth"><span class="title">No Authentication Key Found.</span><span id="listenProxy" class="button" onClick="appLogic.startAuth()">Retrieve authentication key</span></div>
+        <h2>Apps List <span class="button" onClick="appLogic.loadAssets();">Refresh</span></h2>
+        <table class="appsList">
+            <thead>
+                <tr>
+                    <th width="40%">App Name</th>
+                    <th>Publisher</th>
+                    <th width="130" class="disableSort disableFilterBy">Version</th>
+                    <th width="80" class="disableFilterBy">Size</th>
+                    <th width="80" class="disableFilterBy">Status</th>
+                    <th width="80" class="disableFilterBy">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </body>
+</html>
