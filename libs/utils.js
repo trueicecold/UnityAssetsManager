@@ -16,5 +16,16 @@ module.exports = {
                 resolve(true)
             }, seconds * 1000);
         });
+    },
+    objectToQueryString(obj) {
+        var str = [];
+        for (var p in obj)
+          if (obj.hasOwnProperty(p)) {
+            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+          }
+        return str.join("&");
+    },
+    generateRandomString(length) {
+        return Array(length).fill().map(()=>"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".charAt(Math.random()*62)).join("")
     }
 }

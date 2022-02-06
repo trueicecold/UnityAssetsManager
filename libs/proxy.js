@@ -16,7 +16,7 @@ const init = () => {
         throttle: 10000,
         forceProxyHttps: false,
         wsIntercept: false,
-        silent: false
+        silent: true
     }
 
     proxyServer = new AnyProxy.ProxyServer(proxyOptions);
@@ -31,7 +31,7 @@ const generateCA = () => {
             if (!error) {
                 console.log("CA Certificate Generated")
             } else {
-              console.error('error when generating rootCA', error);
+              console.error('Error generating rootCA', error);
             }
         });
     }
@@ -49,12 +49,13 @@ const trustCA = () => {
     }
 }
 
-const start = () => {
+const start = (global = true) => {
     if (!inited) {
         init();
         proxyServer.start();
     }
-    enableGlobalProxy();
+    if (global)
+        enableGlobalProxy();
     
 }
 

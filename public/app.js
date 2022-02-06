@@ -12,25 +12,35 @@ appLogic.init = () => {
 }
 
 appLogic.startAuth = () => {
-    ipcRenderer.on("onAuthReceived", appLogic.onAuthValid);
-    ipcRenderer.send("proxy.start");
+    ipcRenderer.send("auth.start");
+    /*ipcRenderer.send("proxy.start");*/
 }
 
-appLogic.onAuthValid = (e) => {
-    appLogic.setAuthText();
+appLogic.onAuthStatus = function(e, status) {
+    switch(status.status) {
+        case "LOGGED_IN":
+            appLogic.setLoggedInText();    
+            break;
+        case "PROFILE_INFO":
+            appLogic.setProfileInfoText(status.data);
+            break;
+    }
 }
 
-appLogic.setAuthText = () => {
-    $("#authStatus").removeClass("error").addClass("success").find(".title").html("Auth key found!");
+appLogic.setLoggedInText = () => {
+    $("#authStatus").removeClass("error").addClass("success").find(".title").html("Logged in, loading profile data...");
+}
+
+appLogic.setProfileInfoText = (userData) => {
+    $("#authStatus").removeClass("error").addClass("success").find(".title").html("Logged in as " + userData.name.fullName);
 }
 
 appLogic.setAuthTextError = () => {
-    $("#authStatus").removeClass("success").addClass("error").find(".title").html("Auth key invalid!");
+    $("#authStatus").removeClass("success").addClass("error").find(".title").html("Not logged in.");
 }
 
 appLogic.stopAuth = () => {
-    dispatcher.removeListener("onAuthReceived", appLogic.onAuthValid);
-    ipcRenderer.send("proxy.stop");
+    /*ipcRenderer.send("proxy.stop");*/
 }
 
 appLogic.loadAssets = () => {
@@ -137,8 +147,7 @@ appLogic.onDownloadProgress = (e, status) => {
 }
 
 appLogic.onDownloadFailed = (e, error) => {
-    console.log(error.packageId);
-    console.log(error.message);
+    console.log("Error downloading asset")
 }
 
 appLogic.getPackageById = (packageId) => {
@@ -159,10 +168,11 @@ appLogic.updatePackageById = (packageId, update) => {
 }
 
 appLogic.initHandlers = () => {
-    ipcRenderer.on("onAuthValid", appLogic.onAuthValid);
+    ipcRenderer.on("onAuthStatus", appLogic.onAuthStatus);
     ipcRenderer.on("onAssetsLoaded", appLogic.onAssetsLoaded);
     ipcRenderer.on("onAssetsFailedLoading", appLogic.onAssetsFailedLoading);
     ipcRenderer.on("onDownloadProgress", appLogic.onDownloadProgress);
     ipcRenderer.on("onDownloadComplete", appLogic.onDownloadProgress);
     ipcRenderer.on("onDownloadFailed", appLogic.onDownloadFailed);
+    ipcRenderer.on("onProfileInfo", appLogic.onProfileInfo);
 }

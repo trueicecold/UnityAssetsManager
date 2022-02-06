@@ -37,6 +37,16 @@ const stopLoadingAssets = () => {
     continueLoadAssets = false;
 }
 
+const getProfile = async () => {
+    try {
+        let userInfo = await http.get("https://api.unity.com/v1/users/" + config.get("user_id"));
+        dispatcher.dispatch("onProfileInfo", userInfo.data);
+    }
+    catch(e) {
+        console.log("Error loading profile data");
+    }
+}
+
 const loadAssets = async () => {
     if (isDownloading()) return;
     unityAssets = [];
@@ -60,7 +70,7 @@ const loadAssets = async () => {
                             human:utils.bytesForHuman(size)
                         }
                     };
-    
+
                     unityAssets.push(appJson);
                     fs.writeFileSync("unity_assets.json", JSON.stringify(unityAssets));
                     if (unityAssets.length == unityAssetsResponse.length) {
@@ -185,9 +195,7 @@ const downloadAsset = async (packageId) => {
 }
 
 const cancelDownload = (packageId) => {
-    console.log("CANCEL REQUESTED")
     if (allDownloaders[packageId]) {
-        console.log("APP FOUND")
         let appData = getPackageById(packageId);
         allDownloaders[packageId].downloader.cancel();
         appData.fileStatus = appData.prevFileStatus;
@@ -246,5 +254,6 @@ module.exports = {
     stopLoadingAssets,
     downloadAsset,
     cancelDownload,
-    isDownloading
+    isDownloading,
+    getProfile
 }

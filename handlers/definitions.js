@@ -3,6 +3,8 @@ const callbacks = require("./callbacks.js");
 const dispatcher = require("../libs/dispatcher.js");
 const unity = require("../libs/unity.js");
 const proxy = require("../libs/proxy.js");
+const config = require("../libs/config.js");
+const auth = require("../libs/auth.js");
 
 ipcMain.on("handlers.init", () => {
     dispatcher.addListener("onAssetsLoaded", callbacks.onAssetsLoaded);
@@ -14,6 +16,7 @@ ipcMain.on("handlers.init", () => {
     dispatcher.addListener("onDownloadFailed", callbacks.onDownloadFailed);
     dispatcher.addListener("onAuthValid", callbacks.onAuthValid);
     dispatcher.addListener("onAuthReceived", callbacks.onAuthReceived);
+    dispatcher.addListener("onProfileInfo", callbacks.onProfileInfo);
 });
 
 ipcMain.on("unity.init", () => {
@@ -37,6 +40,17 @@ ipcMain.on("assets.download", (e, packageId) => {
 });
 
 ipcMain.on("assets.cancelDownload", (e, packageId) => {
-    console.log("IPC CANCEL SENT: " + packageId);
     unity.cancelDownload(packageId);
+});
+
+ipcMain.on("unity.login-response", (e, response) => {
+    auth.validateLogin(response);
+});
+
+ipcMain.on("auth.start", (e) => {
+    auth.prepareLoginScreen();
+});
+
+ipcMain.on("auth.revoke", (e) => {
+    auth.revoke();
 });
