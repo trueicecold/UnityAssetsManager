@@ -31,13 +31,13 @@ const validateLogin = (response) => {
 }
 
 const validateCode = async(code) => {
-    await http.post("https://api.unity.com/v1/oauth2/token", utils.objectToQueryString({
+    await http.post("https://api.unity.com/v1/oauth2/token", {
         client_id: "unity_hub",
         code_verifier: authCode,
         redirect_uri: "unityhub://login",
         code: code,
         grant_type: "authorization_code"
-    })).then((result) => {
+    }).then((result) => {
         dispatcher.dispatch("onAuthReceived", {auth_token:result.data.access_token, user_id:result.data.user});
     }).catch((e) => {
         console.log("Error validating code");

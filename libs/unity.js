@@ -51,7 +51,7 @@ const loadAssets = async () => {
     if (isDownloading()) return;
     unityAssets = [];
     try {
-        unityAssetsResponse = await http.get("https://packages-v2.unity.com:443/-/api/purchases?offset=0&limit=1000&orderBy=name&order=asc");
+        unityAssetsResponse = await http.get("https://packages-v2.unity.com/-/api/purchases?offset=0&limit=1000&orderBy=name&order=asc");
         unityAssetsResponse = unityAssetsResponse.data.results;
 
         for (var app in unityAssetsResponse) {
